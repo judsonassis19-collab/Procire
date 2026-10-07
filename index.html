@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Estoque & Localização</title>
+  <!-- Biblioteca HTML5 QR Code Scanner -->
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding-bottom: 70px; /* Espaço para o menu inferior */
+    }
+
+    header {
+      background-color: var(--primary);
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .container {
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-muted);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      background: #fff;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:active {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background-color: #64748b;
+    }
+
+    .btn-success {
+      background-color: var(--success);
+    }
+
+    .btn-danger {
+      background-color: var(--danger);
+    }
+
+    /* Estilo do Scanner QR Code */
+    #qr-reader {
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+    }
+
+    #qr-reader video {
+      object-fit: cover;
+    }
+
+    /* Lista de Produtos */
+    .product-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .product-info h3 {
+      font-size: 1.05rem;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .product-info p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin: 2px 0;
+    }
+
+    .badge-litros {
+      display: inline-block;
+      background-color: #dbeafe;
+      color: #1e40af;
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      margin-top: 4px;
+    }
+
+    .badge-qr {
+      background-color: #f3e8ff;
+      color: #6b21a8;
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-top: 4px;
+    }
+
+    /* Navigation Bar (Menu Inferior Móvel) */
+    nav.bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background-color: #ffffff;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .nav-item {
+      flex: 1;
+      text-align: center;
+      background: none;
+      border: none;
+      padding: 8px 0;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+      font-weight: bold;
+    }
+
+    .nav-icon {
+      font-size: 1.2rem;
+    }
+
+    .empty-msg {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <header id="headerTitle">Cadastrar Produto</header>
+
+  <div class="container">
+
+    <!-- ABA 1: CADASTRO -->
+    <div id="tab-add" class="tab-content active">
+      <div class="card">
+        <button type="button" class="btn btn-secondary" id="btn-toggle-scan" onclick="toggleScanner('add')">
+          📷 Ler QR Code / Barcode
+        </button>
+        <div id="qr-reader" style="display:none; margin-top:10px;"></div>
+
+        <form id="productForm" style="margin-top: 14px;">
+          <div class="form-group">
+            <label for="code">Código / QR Code (Opcional)</label>
+            <input type="text" id="code" placeholder="Código escaneado ou manual">
+          </div>
+
+          <div class="form-group">
+            <label for="name">Nome do Produto</label>
+            <input type="text" id="name" placeholder="Ex: Tinta Esmalte Branco" required>
+          </div>
+
+          <div class="form-group">
+            <label for="location">Endereço / Localização</label>
+            <input type="text" id="location" placeholder="Ex: Corredor B - Prateleira 3" required>
+          </div>
+
+          <div class="form-group">
+            <label for="liters">Quantidade em Litros (L)</label>
+            <input type="number" id="liters" step="0.01" min="0" placeholder="Ex: 3.6" required>
+          </div>
+
+          <button type="submit" class="btn">💾 Salvar Produto</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ABA 2: LOCALIZAR & LISTAR -->
+    <div id="tab-search" class="tab-content">
+      <div class="card">
+        <input type="text" id="searchInput" placeholder="🔎 Buscar por Nome, Local ou Código..." style="margin-bottom: 10px;">
+        <button type="button" class="btn btn-secondary" onclick="toggleScanner('search')">
+          📷 Scan para Buscar
+        </button>
+        <div id="qr-reader-search" style="display:none; margin-top:10px;"></div>
+      </div>
+
+      <div id="productList"></div>
+    </div>
+
+    <!-- ABA 3: BACKUP / SEPARAR DADOS -->
+    <div id="tab-backup" class="tab-content">
+      <div class="card">
+        <h3>Salvar / Exportar Dados</h3>
+        <p style="font-size:0.85rem; color: var(--text-muted); margin: 8px 0;">
+          Faça o download da sua lista de produtos cadastrados para guardar uma cópia separada ou enviar para outro aparelho.
+        </p>
+        <button class="btn btn-success" onclick="exportData()">📥 Exportar para Arquivo (JSON)</button>
+      </div>
+
+      <div class="card">
+        <h3>Restaurar / Importar Dados</h3>
+        <p style="font-size:0.85rem; color: var(--text-muted); margin: 8px 0;">
+          Carregue um arquivo JSON salvo anteriormente para restaurar seu estoque.
+        </p>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+        <button class="btn" onclick="document.getElementById('importFile').click()">📤 Importar Arquivo (JSON)</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MENU DE NAVEGAÇÃO INFERIOR -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="switchTab('add', 'Cadastrar Produto', this)">
+      <span class="nav-icon">➕</span>
+      <span>Cadastrar</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('search', 'Localizar Produto', this)">
+      <span class="nav-icon">🔍</span>
+      <span>Localizar</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('backup', 'Gerenciador & Backup', this)">
+      <span class="nav-icon">📁</span>
+      <span>Backup</span>
+    </button>
+  </nav>
+
+  <script>
+    // Banco de dados Local
+    let products = JSON.parse(localStorage.getItem('products_app_db')) || [];
+    let html5QrcodeScanner = null;
+
+    // Alternar Abas
+    function switchTab(tabId, title, btnElement) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById('tab-' + tabId).classList.add('active');
+      btnElement.classList.add('active');
+      document.getElementById('headerTitle').innerText = title;
+
+      stopScanner();
+      if(tabId === 'search') renderProducts();
+    }
+
+    // Salvar no LocalStorage
+    function saveToStorage() {
+      localStorage.setItem('products_app_db', JSON.stringify(products));
+    }
+
+    // Cadastrar Produto
+    document.getElementById('productForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const newProduct = {
+        id: Date.now(),
+        code: document.getElementById('code').value.trim(),
+        name: document.getElementById('name').value.trim(),
+        location: document.getElementById('location').value.trim(),
+        liters: parseFloat(document.getElementById('liters').value).toFixed(2)
+      };
+
+      products.push(newProduct);
+      saveToStorage();
+      
+      alert('Produto salvo com sucesso!');
+      this.reset();
+      stopScanner();
+    });
+
+    // Renderizar Lista de Produtos
+    function renderProducts(filterText = '') {
+      const listContainer = document.getElementById('productList');
+      listContainer.innerHTML = '';
+
+      const search = filterText.toLowerCase();
+      const filtered = products.filter(p => 
+        p.name.toLowerCase().includes(search) ||
+        p.location.toLowerCase().includes(search) ||
+        (p.code && p.code.toLowerCase().includes(search))
+      );
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = '<div class="empty-msg">Nenhum produto encontrado.</div>';
+        return;
+      }
+
+      filtered.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'product-card';
+        item.innerHTML = `
+          <div class="product-info">
+            <h3>${escapeHtml(p.name)}</h3>
+            <p>📍 <strong>Local:</strong> ${escapeHtml(p.location)}</p>
+            ${p.code ? `<span class="badge-qr">QR/Bar: ${escapeHtml(p.code)}</span>` : ''}
+            <div><span class="badge-litros">${p.liters} Litros</span></div>
+          </div>
+          <button class="btn btn-danger" style="width: auto; padding: 8px 12px;" onclick="deleteProduct(${p.id})">🗑️</button>
+        `;
+        listContainer.appendChild(item);
+      });
+    }
+
+    // Deletar Produto
+    function deleteProduct(id) {
+      if (confirm('Deseja realmente excluir este item?')) {
+        products = products.filter(p => p.id !== id);
+        saveToStorage();
+        renderProducts(document.getElementById('searchInput').value);
+      }
+    }
+
+    // Filtro de Busca
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+      renderProducts(e.target.value);
+    });
+
+    // Leitor de QR Code
+    function toggleScanner(mode) {
+      const elementId = mode === 'add' ? 'qr-reader' : 'qr-reader-search';
+      const container = document.getElementById(elementId);
+
+      if (container.style.display === 'block') {
+        stopScanner();
+        return;
+      }
+
+      container.style.display = 'block';
+      html5QrcodeScanner = new Html5QrcodeScanner(elementId, { fps: 10, qrbox: 220 });
+
+      html5QrcodeScanner.render((decodedText) => {
+        if (mode === 'add') {
+          document.getElementById('code').value = decodedText;
+          alert('Código lido: ' + decodedText);
+        } else {
+          document.getElementById('searchInput').value = decodedText;
+          renderProducts(decodedText);
+        }
+        stopScanner();
+      }, (error) => {
+        // Ignora erros contínuos de leitura frame por frame
+      });
+    }
+
+    function stopScanner() {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear().catch(() => {});
+        html5QrcodeScanner = null;
+      }
+      document.getElementById('qr-reader').style.display = 'none';
+      document.getElementById('qr-reader-search').style.display = 'none';
+    }
+
+    // Exportar Dados (Salvar em partes/backup)
+    function exportData() {
+      if(products.length === 0) {
+        alert('Não há dados para exportar.');
+        return;
+      }
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(products, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `estoque_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    // Importar Dados
+    function importData(event) {
+      const fileReader = new FileReader();
+      fileReader.onload = function(e) {
+        try {
+          const importedProducts = JSON.parse(e.target.result);
+          if (Array.isArray(importedProducts)) {
+            products = importedProducts;
+            saveToStorage();
+            alert('Dados importados com sucesso!');
+            renderProducts();
+          } else {
+            alert('Formato de arquivo inválido.');
+          }
+        } catch (err) {
+          alert('Erro ao ler o arquivo JSON.');
+        }
+      };
+      fileReader.readAsText(event.target.files[0]);
+    }
+
+    // Prevenção XSS
+    function escapeHtml(text) {
+      return text.replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+      });
+    }
+  </script>
+</body>
+</html>
